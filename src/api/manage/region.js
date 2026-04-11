@@ -9,6 +9,14 @@ export function listRegion(query) {
   })
 }
 
+//查询所有的区域
+export function listAllRegion(){
+  return request({
+    url: '/manage/region/list/all',
+    method: 'get'
+  })
+}
+
 // 查询区域管理详细
 export function getRegion(id) {
   return request({

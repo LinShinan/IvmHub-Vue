@@ -9,6 +9,14 @@ export function listPartner(query) {
   })
 }
 
+// 查询所有合作商管理列表
+export function listAllPartner() {
+  return request({
+    url: '/manage/partner/list/all',
+    method: 'get',
+  })
+}
+
 // 查询合作商管理详细
 export function getPartner(id) {
   return request({
@@ -40,5 +48,16 @@ export function delPartner(id) {
   return request({
     url: '/manage/partner/' + id,
     method: 'delete'
+  })
+}
+
+
+/**
+ * 重置合作商密码
+ */
+export function resetPartnerPwd(id){
+  return request({
+    url:'/manage/partner/resetPwd/'+id,
+    method:'put'
   })
 }

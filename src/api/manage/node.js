@@ -9,6 +9,15 @@ export function listNode(query) {
   })
 }
 
+//根据条件查询所有点位管理
+export function listAllNode(query){
+  return request({
+    url: '/manage/node/all',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询点位管理详细
 export function getNode(id) {
   return request({

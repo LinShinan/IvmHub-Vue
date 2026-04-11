@@ -59,13 +59,15 @@
 
     <el-table v-loading="loading" :data="regionList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="主键ID" align="center" prop="id" />
+      <el-table-column label="序号" type="index" align="center" width="50px" />
       <el-table-column label="区域名称" align="center" prop="regionName" />
+      <el-table-column label="点位数" align="center" prop="nodeCount"/>
       <el-table-column label="备注说明" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:region:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:region:remove']">删除</el-button>
+          <el-button link type="info" icon="View" @click="getDetail(scope.row)" v-hasPermi="['manage:node:list']">查看详情</el-button>
+          <el-button link type="success" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:region:edit']">修改</el-button>
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:region:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -95,11 +97,67 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 区域详情对话框 -->
+    <el-dialog
+      title="区域详情"
+      v-model="detailOpen"
+      width="500px"
+      append-to-body
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <!-- 基本信息卡片 -->
+      <div class="detail-card">
+        <div class="detail-item">
+          <div class="detail-label">
+            <span class="label-icon">📍</span>
+            区域名称
+          </div>
+          <div class="detail-value">{{ detailData.regionName || '-' }}</div>
+        </div>
+      </div>
+
+      <!-- 包含点位表格 -->
+      <div class="detail-section">
+        <div class="section-header">
+          <span class="section-title">包含点位</span>
+          <el-tag type="primary" effect="plain" size="small" class="count-tag">
+            共 {{ detailData.nodeList?.length || 0 }} 个
+          </el-tag>
+        </div>
+        
+        <el-table 
+          :data="detailData.nodeList" 
+          border 
+          style="width: 100%"
+          :header-cell-style="{ background: '#f8f9fa', color: '#495057', fontWeight: '500', fontSize: '13px' }"
+          :cell-style="{ fontSize: '13px' }"
+        >
+          <el-table-column label="序号" type="index" align="center" width="70" />
+          <el-table-column label="点位名称" align="center" prop="nodeName" show-overflow-tooltip />
+          <el-table-column label="设备数量" align="center" prop="deviceCount" width="100">
+            <template #default="scope">
+              <el-tag type="success" effect="light" size="small">{{ scope.row.deviceCount || 0 }}</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button size="default" @click="detailOpen = false">关 闭</el-button>
+          <el-button type="primary" size="default" @click="detailOpen = false">确 定</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Region">
 import { listRegion, getRegion, delRegion, addRegion, updateRegion } from "@/api/manage/region";
+import {listAllNode} from "@/api/manage/node";
 
 const { proxy } = getCurrentInstance();
 
@@ -112,6 +170,8 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+
+
 
 const data = reactive({
   form: {},
@@ -199,6 +259,28 @@ function handleUpdate(row) {
   });
 }
 
+
+const detailData = reactive({
+  regionName: '',
+  nodeList: [],
+  vmList: []
+});
+
+// 详情对话框相关
+const detailOpen = ref(false);
+
+const listNodeParam=ref()
+/** 查看详情 */
+function getDetail(row) {
+  detailData.regionName = row.regionName;
+  // 调用专门的接口获取区域下的点位列表
+  listNodeParam.value={regionId: row.id}
+  listAllNode(listNodeParam.value).then(response => {
+    detailData.nodeList = response.rows || [];
+    detailOpen.value = true;
+  });
+}
+
 /** 提交按钮 */
 function submitForm() {
   proxy.$refs["regionRef"].validate(valid => {
@@ -240,3 +322,141 @@ function handleExport() {
 
 getList();
 </script>
+
+<style scoped>
+/* 详情卡片容器 */
+.detail-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  border-left: 3px solid #409eff;
+}
+
+/* 详情项 */
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 标签样式 */
+.detail-label {
+  font-size: 13px;
+  color: #909399;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+/* 标签图标 */
+.label-icon {
+  font-size: 14px;
+}
+
+/* 值样式 */
+.detail-value {
+  font-size: 15px;
+  color: #303133;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* 详情区域样式 */
+.detail-section {
+  background: #ffffff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+/* 区域头部 */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.count-tag {
+  font-weight: 500;
+  font-size: 12px;
+}
+
+/* 空数据样式 */
+.empty-data {
+  padding: 16px 0;
+}
+
+/* 对话框样式优化 */
+:deep(.region-detail-dialog .el-dialog__header) {
+  padding: 18px 20px;
+  margin: 0;
+  border-bottom: 1px solid #e4e7ed;
+  background: #ffffff;
+}
+
+:deep(.region-detail-dialog .el-dialog__title) {
+  color: #303133;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+:deep(.region-detail-dialog .el-dialog__headerbtn .el-dialog__close) {
+  color: #909399;
+  font-size: 18px;
+}
+
+:deep(.region-detail-dialog .el-dialog__headerbtn:hover .el-dialog__close) {
+  color: #409eff;
+}
+
+:deep(.region-detail-dialog .el-dialog__body) {
+  padding: 20px;
+}
+
+:deep(.region-detail-dialog .el-dialog__footer) {
+  padding: 12px 20px 16px;
+  border-top: 1px solid #e4e7ed;
+}
+
+/* 操作按钮颜色效果 */
+.el-button--info.is-link {
+  color: #909399;
+}
+
+.el-button--info.is-link:hover {
+  color: #606266;
+  background-color: rgba(144, 147, 153, 0.1);
+}
+
+.el-button--success.is-link {
+  color: #67c23a;
+}
+
+.el-button--success.is-link:hover {
+  color: #85ce61;
+  background-color: rgba(103, 194, 58, 0.1);
+}
+
+.el-button--danger.is-link {
+  color: #f56c6c;
+}
+
+.el-button--danger.is-link:hover {
+  color: #f78989;
+  background-color: rgba(245, 108, 108, 0.1);
+}
+</style>
