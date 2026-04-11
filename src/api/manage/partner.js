@@ -12,7 +12,7 @@ export function listPartner(query) {
 // 查询所有合作商管理列表
 export function listAllPartner() {
   return request({
-    url: '/manage/partner/list/all',
+    url: '/manage/partner/all',
     method: 'get',
   })
 }
