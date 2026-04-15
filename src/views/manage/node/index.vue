@@ -71,8 +71,8 @@
     <el-table v-loading="loading" :data="nodeList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" align="center" width="50px" />
-      <el-table-column label="点位名称" align="center" prop="nodeName" />
-      <el-table-column label="商圈类型" align="center" prop="businessType">
+      <el-table-column label="点位名称" align="center" prop="nodeName" width="150px" />
+      <el-table-column label="商圈类型" align="center" prop="businessType" width="100px">
         <template #default="scope">
           <dict-tag :options="business_type" :value="scope.row.businessType"/>
         </template>
@@ -82,8 +82,9 @@
       <el-table-column label="详细地址" align="left" prop="address" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:node:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:node:remove']">删除</el-button>
+          <el-button link type="primary" icon="View" @click="getVmInfo(scope.row)" v-hasPermi="['manage:machine:list']">查看详情</el-button>
+          <el-button link type="success" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:node:edit']">修改</el-button>
+          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:node:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -146,21 +147,39 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 查看详情对话框 -->
+     <el-dialog title="查看详情" v-model="vmOpen" width="600px" append-to-body>
+      <el-table :data="vmList">
+        <el-table-column label="设备编号" align="center" prop="innerCode" />
+        <el-table-column label="设备状态" align="center" prop="vmStatus">
+          <template #default="scope">
+            <dict-tag :options="vm_status" :value="scope.row.vmStatus"/>
+          </template>
+        </el-table-column>
+        <el-table-column label="最后一次供货时间" align="center" prop="lastSupplyTime">
+          <template #default="scope">
+            <span>{{ parseTime(scope.row.lastSupplyTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+    
   </div>
 </template>
 
 <script setup name="Node">
 import { listNode, getNode, delNode, addNode, updateNode } from "@/api/manage/node";
-import { ref, reactive, getCurrentInstance, onMounted } from "vue";
+import { ref, reactive, getCurrentInstance, onMounted, computed } from "vue";
 import { listAllRegion } from "@/api/manage/region";
 import { listAllPartner } from "@/api/manage/partner";
+import { listAllMachineBy } from "@/api/manage/machine";
 
 
 const { proxy } = getCurrentInstance();
-const { business_type } = proxy.useDict('business_type');
+const { business_type, vm_status } = proxy.useDict('business_type', 'vm_status');
 
 const nodeList = ref([]);
-const open = ref(false);
 const loading = ref(true);
 const showSearch = ref(true);
 const ids = ref([]);
@@ -168,74 +187,102 @@ const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
 const title = ref("");
+const open = ref(false);
+const queryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  nodeName: undefined,
+  regionId: undefined,
+  businessType: undefined,
+  partnerId: undefined,
+  address: undefined,
+});
+const form = reactive({
+  id: undefined,
+  nodeName: undefined,
+  businessType: undefined,
+  regionId: undefined,
+  partnerId: undefined,
+  address: undefined,
+});
+const rules = reactive({
+  nodeName: [{ required: true, message: "点位名称不能为空", trigger: "blur" }],
+  businessType: [{ required: true, message: "商圈类型不能为空", trigger: "blur" }],
+  regionId: [{ required: true, message: "所在区域不能为空", trigger: "blur" }],
+  partnerId: [{ required: true, message: "所属合作商不能为空", trigger: "blur" }],
+  address: [{ required: true, message: "详细地址不能为空", trigger: "blur" }],
+});
+const regionList = ref([]);
 
-const data = reactive({
-  form: {},
-  queryParams: {
-    pageNum: 1,
-    pageSize: 10,
-    nodeName: null,
-    regionId: null,
-    partnerId: null,
-  },
-  rules: {
-    nodeName: [
-      { required: true, message: "点位名称不能为空", trigger: "blur" }
-    ],
-    address: [
-      { required: true, message: "详细地址不能为空", trigger: "blur" }
-    ],
-    businessType: [
-      { required: true, message: "商圈类型不能为空", trigger: "change" }
-    ],
-    regionId: [
-      { required: true, message: "区域ID不能为空", trigger: "blur" }
-    ],
-    partnerId: [
-      { required: true, message: "合作商ID不能为空", trigger: "change" }
-    ],
+function getRegionList(){
+  listAllRegion().then(response => {
+    regionList.value = response.rows;
+  });
+}
+
+const partnerList=ref([]);
+function getPartnerList(){
+  listAllPartner().then(response => {
+    partnerList.value = response.rows;
+  });
+}
+
+/** 合作商 Map */
+const partnerMap = computed(() => {
+  const map = {};
+  if (partnerList.value && partnerList.value.length > 0) {
+    partnerList.value.forEach(item => {
+      map[String(item.id)] = item.partnerName;
+    });
   }
+  return map;
 });
 
-const { queryParams, form, rules } = toRefs(data);
+const machineParam = ref({});
+const vmList = ref([]);
+const vmOpen = ref(false);
+/** 查看详情按钮操作 */
+function getVmInfo(row) {
+  reset();
+  const _id = row.id || ids.value;
+  machineParam.value={nodeId:_id};
+  listAllMachineBy(machineParam.value).then(response => {
+    vmList.value = response.rows;
+    vmOpen.value = true;
+    title.value = "查看详情";
+  });
+}
 
 /** 查询点位管理列表 */
 function getList() {
   loading.value = true;
-  listNode(queryParams.value).then(response => {
+  listNode(queryParams).then(response => {
     nodeList.value = response.rows;
     total.value = response.total;
     loading.value = false;
   });
 }
 
-// 取消按钮
+/** 取消按钮操作 */
 function cancel() {
   open.value = false;
   reset();
 }
 
-// 表单重置
+/** 表单重置 */
 function reset() {
-  form.value = {
-    id: null,
-    nodeName: null,
-    address: null,
-    businessType: null,
-    regionId: null,
-    partnerId: null,
-    createTime: null,
-    updateTime: null,
-    createBy: null,
-    updateBy: null,
-    remark: null
-  };
+  form.id = undefined;
+  form.nodeName = undefined;
+  form.businessType = undefined;
+  form.regionId = undefined;
+  form.partnerId = undefined;
+  form.address = undefined;
   proxy.resetForm("nodeRef");
 }
 
 /** 搜索按钮操作 */
 function handleQuery() {
-  queryParams.value.pageNum = 1;
+  queryParams.pageNum = 1;
   getList();
 }
 
@@ -245,10 +292,10 @@ function resetQuery() {
   handleQuery();
 }
 
-// 多选框选中数据
+/** 多选框选中数据 */
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.id);
-  single.value = selection.length != 1;
+  single.value = selection.length !== 1;
   multiple.value = !selection.length;
 }
 
@@ -262,9 +309,9 @@ function handleAdd() {
 /** 修改按钮操作 */
 function handleUpdate(row) {
   reset();
-  const _id = row.id || ids.value
+  const _id = row.id || ids.value;
   getNode(_id).then(response => {
-    form.value = response.data;
+    Object.assign(form, response.data);
     open.value = true;
     title.value = "修改点位管理";
   });
@@ -274,14 +321,14 @@ function handleUpdate(row) {
 function submitForm() {
   proxy.$refs["nodeRef"].validate(valid => {
     if (valid) {
-      if (form.value.id != null) {
-        updateNode(form.value).then(response => {
+      if (form.id !== undefined) {
+        updateNode(form).then(response => {
           proxy.$modal.msgSuccess("修改成功");
           open.value = false;
           getList();
         });
       } else {
-        addNode(form.value).then(response => {
+        addNode(form).then(response => {
           proxy.$modal.msgSuccess("新增成功");
           open.value = false;
           getList();
@@ -304,25 +351,9 @@ function handleDelete(row) {
 
 /** 导出按钮操作 */
 function handleExport() {
-  proxy.download('manage/node/export', {
-    ...queryParams.value
-  }, `node_${new Date().getTime()}.xlsx`)
-}
-
-
-const regionList = ref([]);
-
-function getRegionList(){
-  listAllRegion().then(response => {
-    regionList.value = response.rows;
-  });
-}
-
-const partnerList=ref([]);
-function getPartnerList(){
-  listAllPartner().then(response => {
-    partnerList.value = response.rows;
-  });
+  proxy.download("manage/node/export", {
+    ...queryParams,
+  }, `node_${new Date().getTime()}.xlsx`);
 }
 
 onMounted(() => {
@@ -330,4 +361,5 @@ onMounted(() => {
   getPartnerList();
   getList();
 });
+
 </script>
