@@ -8,6 +8,8 @@ export function listMachine(query) {
     params: query
   })
 }
+
+
 export function listAllMachineBy(query) {
   return request({
     url: '/manage/machine/all',

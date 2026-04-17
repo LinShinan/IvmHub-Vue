@@ -79,8 +79,9 @@
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:machine:edit']">修改</el-button>
+        <template #default="scope"> 
+          <el-button link type="primary" icon="Edit" @click="handlePolicy(scope.row)" v-hasPermi="['manage:machine:edit']">策略</el-button>
+          <el-button link type="success" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:machine:edit']">修改</el-button>
           <!-- <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:machine:remove']">删除</el-button> -->
         </template>
       </el-table-column>
@@ -139,6 +140,31 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 更换策略对话框 -->
+    <el-dialog title="更换策略" v-model="policyOpen" width="500px" append-to-body> 
+      <el-form ref="policyRef" :model="policyForm" :rules="policyRules" label-width="80px"> 
+        <el-form-item label="设备编号">
+          <span>{{ policyForm.innerCode }}</span>
+        </el-form-item>
+        <el-form-item label="选择策略" prop="policyId">
+          <el-select v-model="policyForm.policyId" placeholder="请选择策略" style="width: 100%">
+            <el-option 
+              v-for="item in policyList" 
+              :key="item.policyId" 
+              :label="item.policyName + ' (' + item.discount + '折)'" 
+              :value="item.policyId" 
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitPolicyForm">确 定</el-button>
+          <el-button @click="cancelPolicy">取 消</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -148,6 +174,7 @@ import { listAllVmType } from "@/api/manage/vmType";
 import { listAllPartner } from "@/api/manage/partner";
 import { listAllNode } from "@/api/manage/node";
 import { listAllRegion } from "@/api/manage/region";
+import {listAllPolicyBy, getPolicy} from "@/api/manage/policy";
 
 const { proxy } = getCurrentInstance();
 const { vm_status } = proxy.useDict('vm_status');
@@ -368,13 +395,75 @@ const regionMap = computed(() => {
   return map;
 });
 
+const policyOpen = ref(false);
+const policyForm = ref({});
+const policyList = ref([]);
+const policyRules = {
+  policyId: [
+    { required: true, message: "策略不能为空", trigger: "blur" }
+  ]
+};
 
+/** 查询所有策略列表 */
+function getPolicyList() {
+  listAllPolicyBy(null).then(response => {
+    policyList.value = response.rows;
+  });
+}
+
+function handlePolicy(row){
+  const _id = row.id || ids.value;
+  
+  // 先获取设备信息
+  getMachine(_id).then(machineResponse => {
+    const machineData = machineResponse.data;
+    
+    // 给 policyForm 赋值（不是 form！）
+    policyForm.value = {
+      id: machineData.id,
+      innerCode: machineData.innerCode,
+      policyId: machineData.policyId
+    };
+    
+    // 再获取策略列表
+    listAllPolicyBy(null).then(policyResponse => {
+      policyList.value = policyResponse.rows;
+      policyOpen.value = true;
+    });
+  });
+}
+
+/** 提交策略表单 */
+function submitPolicyForm() {
+  proxy.$refs["policyRef"].validate(valid => {
+    if (valid) {
+      // 构建更新数据，只更新策略相关字段
+      const updateData = {
+        id: policyForm.value.id,
+        innerCode: policyForm.value.innerCode,
+        policyId: policyForm.value.policyId
+      };
+      updateMachine(updateData).then(response => {
+        proxy.$modal.msgSuccess("策略修改成功");
+        policyOpen.value = false;
+        getList();
+      });
+    }
+  });
+}
+
+/** 取消策略表单 */
+function cancelPolicy() {
+  policyOpen.value = false;
+  policyForm.value = {};
+}
 
 onMounted(() => {
   getVmTypeList();
   getPartnerList();
   getNodeList();
   getRegionList();
+  getPolicyList();
   getList();
 });
 
