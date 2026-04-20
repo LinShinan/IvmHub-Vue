@@ -80,7 +80,8 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope"> 
-          <el-button link type="primary" icon="Edit" @click="handlePolicy(scope.row)" v-hasPermi="['manage:machine:edit']">策略</el-button>
+          <el-button link type="primary" icon="Monitor" @click="handleGoods(scope.row)" v-hasPermi="['manage:machine:edit']">货道</el-button>
+          <el-button link type="info" icon="EditPen" @click="handlePolicy(scope.row)" v-hasPermi="['manage:machine:edit']">策略</el-button>
           <el-button link type="success" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:machine:edit']">修改</el-button>
           <!-- <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:machine:remove']">删除</el-button> -->
         </template>
@@ -165,6 +166,9 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 货道组件 -->
+    <ChannelDialog :goodVisible="goodVisible" :goodData="goodData" @handleCloseGood="handleCloseGood"></ChannelDialog>
   </div>
 </template>
 
@@ -418,7 +422,7 @@ function handlePolicy(row){
   getMachine(_id).then(machineResponse => {
     const machineData = machineResponse.data;
     
-    // 给 policyForm 赋值（不是 form！）
+    // 给 policyForm 赋值
     policyForm.value = {
       id: machineData.id,
       innerCode: machineData.innerCode,
@@ -458,6 +462,23 @@ function cancelPolicy() {
   policyForm.value = {};
 }
 
+// 货道组件
+import ChannelDialog from './components/ChannelDialog.vue';
+const goodVisible = ref(false); //货道弹层显示隐藏
+const goodData = ref({}); //货道信息用来拿取 vmTypeId和innerCode
+// 打开货道弹层
+const handleGoods = (row) => {
+  goodVisible.value = true;
+  goodData.value = row;
+};
+// 关闭货道弹层
+const handleCloseGood = () => {
+  goodVisible.value = false;
+};
+
+
+
+
 onMounted(() => {
   getVmTypeList();
   getPartnerList();
@@ -468,3 +489,6 @@ onMounted(() => {
 });
 
 </script>
+
+
+<style lang="scss" scoped src="./index.scss"></style>
