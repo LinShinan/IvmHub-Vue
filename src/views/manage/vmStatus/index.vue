@@ -102,18 +102,30 @@
     />
 
     <!-- 查看详情对话框 -->
-    <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-     
+    <el-dialog title="查看详情" v-model="viewOpen" width="500px" append-to-body>
+        <el-row :gutter="20">
+          <el-col :span="6">销售量：{{ vmDetailsForm.salesVolume }}</el-col>
+          <el-col :span="6">销售额：{{ vmDetailsForm.salesAmount}}元</el-col>
+          <el-col :span="6">补货次数：{{ vmDetailsForm.supplyCount }}次</el-col>
+          <el-col :span="6">维修次数：{{ vmDetailsForm.repairCount}}次</el-col>
+        </el-row>
+      <h3>商品销量（月）</h3>
+      <el-table :data="vmDetailsForm.productSales" style="width: 100%">
+        <el-table-column label="商品" prop="skuName" />
+        <el-table-column label="销量" prop="total" />
+      </el-table>
+  
     </el-dialog>
   </div>
 </template>
 
 <script setup name="Machine">
-import { listMachine, getMachine, delMachine, addMachine, updateMachine } from "@/api/manage/machine";
+import { listMachine, getMachine, delMachine, addMachine, updateMachine,getVmDetails } from "@/api/manage/machine";
 import { listAllVmType } from "@/api/manage/vmType";
 import { listAllPartner } from "@/api/manage/partner";
 import { listAllNode } from "@/api/manage/node";
 import { listAllRegion } from "@/api/manage/region";
+
 
 const { proxy } = getCurrentInstance();
 const { vm_status } = proxy.useDict('vm_status');
@@ -225,14 +237,15 @@ function handleAdd() {
   title.value = "添加设备管理";
 }
 
-/** 修改按钮操作 */
+const viewOpen=ref(false);
+const vmDetailsForm =ref({});
+/** 查看详情操作 */
 function getInfo(row) {
   reset();  
-  const _id = row.id;
-  getMachine(_id).then(response => {
-    form.value = response.data;
-    open.value = true;
-    title.value = "查看详情";
+  const _innerCode = row.innerCode;
+  getVmDetails(_innerCode).then(response => {
+    vmDetailsForm.value = response.data;
+    viewOpen.value = true;
   });
 }
 
@@ -333,7 +346,6 @@ const regionMap = computed(() => {
   });
   return map;
 });
-
 
 
 onMounted(() => {

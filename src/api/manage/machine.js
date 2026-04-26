@@ -51,3 +51,11 @@ export function delMachine(id) {
     method: 'delete'
   })
 }
+
+
+export function getVmDetails(innerCode){
+  return request({
+    url: '/manage/machine/details/' + innerCode,
+    method: 'get'
+  })
+}
