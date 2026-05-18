@@ -1,19 +1,66 @@
-IvmHub 框架相关项目介绍
+# IvmHub-Vue
 
-# IvmHub
+智能售货机物联网管理平台 — 前端
 
-#### 基于RuoYi（SpringBoot+Vue前后端分离）的Java快速开发框架
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Vue](https://img.shields.io/badge/Vue-3.4.0-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.0.4-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Element Plus](https://img.shields.io/badge/Element_Plus-2.4.3-409EFF?style=flat-square&logo=element&logoColor=white)](https://element-plus.org/)
+[![Pinia](https://img.shields.io/badge/Pinia-2.1.7-F7D336?style=flat-square&logo=vuedotjs&logoColor=white)](https://pinia.vuejs.org/)
+[![Vue Router](https://img.shields.io/badge/Vue_Router-4.2.5-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)](https://router.vuejs.org/)
+[![ECharts](https://img.shields.io/badge/ECharts-5.4.3-AA344D?style=flat-square&logo=apacheecharts&logoColor=white)](https://echarts.apache.org/)
+[![Axios](https://img.shields.io/badge/Axios-0.27.2-5A29E4?style=flat-square&logo=axios&logoColor=white)](https://axios-http.com/)
+[![Sass](https://img.shields.io/badge/Sass-1.69.5-CC6699?style=flat-square&logo=sass&logoColor=white)](https://sass-lang.com/)
+[![Node](https://img.shields.io/badge/Node-18+-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 
-## 背景介绍
+## 相关仓库
 
-在数字经济与物联网技术深度融合的当下，传统售货机行业面临运营效率低下、运维成本偏高、盈利周期漫长等痛点，已难以适配新型消费场景的需求。IvmHub依托RuoYi前后端分离架构，聚焦智能售货机领域的数字化升级，以B端运营需求为核心，以C端体验优化为补充，对传统售货机进行全流程智能化改造，助力行业实现降本增效、快速盈利的目标。
+| 项目 | 地址 |
+|------|------|
+| 后端 SpringBoot | [LinShinan/IvmHub](https://github.com/LinShinan/IvmHub) |
+| 前端 Vue3 | [LinShinan/IvmHub-Vue](https://github.com/LinShinan/IvmHub-Vue) |
 
-项目核心逻辑的是通过物联网技术实现设备状态、销售数据、库存信息的实时采集与分析，为B端运营者提供精准的决策支撑，可根据不同场景、不同点位的消费特征，灵活匹配机型与商品组合，让运营方案更具针对性；同时，摒弃传统现金支付模式，全面接入微信、支付宝、银联扫码及刷脸支付等便捷方式，简化C端用户购物流程，提升消费体验。目前，项目已形成自营、加盟、点位分成等多元化业务模式，适配不同规模B端用户的发展需求，助力各类运营主体快速实现商业价值变现。
+## 项目说明
 
-## 业务介绍
+本项目基于 [RuoYi-Vue](https://gitee.com/y_project/RuoYi-Vue) 3.8.7 构建，复用其认证鉴权、用户角色菜单、代码生成器等基础框架能力。**核心开发集中在 `manage` 业务模块**，即 `src/views/manage/` 和 `src/api/manage/`，与 RuoYi 原有代码完全解耦。
 
-随着平台运营规模的持续扩大，售货机设备与点位数量逐年递增，为进一步优化资源配置、提升运营运维效率，平台基于IvmHub框架完成系统架构拆分，构建了“客户端+平台端”的全场景服务体系，实现各环节高效协同、精准管控。
+## manage 业务模块
 
-客户端聚焦场景化服务，分为三大板块：一是运维客户端，面向专业维修人员，实现故障预警、工单派发、维修跟踪、设备巡检等全流程管理，确保设备故障快速响应、及时解决，最大限度减少设备停机损耗；二是运营客户端，聚焦日常运营核心需求，实现库存监控、补货提醒、销售数据分析等功能，有效减少缺货、积压等问题，提升设备运营效益；三是C端用户客户端，以简洁便捷的操作界面，实现快速选品、一键支付、订单查询等功能，大幅缩短用户购物耗时，增强用户粘性。
+| 模块 | 页面 | 接口 | 说明 |
+|------|------|------|------|
+| 合作商管理 | `views/manage/partner/` | `api/manage/partner.js` | 合作商 CRUD、密码重置 |
+| 区域管理 | `views/manage/region/` | `api/manage/region.js` | 地理区域划分 |
+| 点位管理 | `views/manage/node/` | `api/manage/node.js` | 售货机部署点位 |
+| 策略管理 | `views/manage/policy/` | `api/manage/policy.js` | 补货 / 运营策略 |
+| 人员管理 | `views/manage/emp/` | `api/manage/emp.js` | 运维、运营人员 |
+| 设备类型 | `views/manage/vmType/` | `api/manage/vmType.js` | 售货机机型 |
+| 商品类型 | `views/manage/skuClass/` | `api/manage/skuClass.js` | SKU 分类 |
+| 商品管理 | `views/manage/sku/` | `api/manage/sku.js` | SKU 商品 |
+| 设备管理 | `views/manage/machine/` | `api/manage/machine.js` + `channel.js` | 设备 + 货道配置 |
+| 工单管理 | `views/manage/task/` | `api/manage/task.js` + `taskType.js` | 运营工单 + 运维工单 |
+| 订单管理 | `views/manage/order/` | `api/manage/order.js` | 订单查询管理 |
+| 首页看板 | `views/home/` | — | 销售统计、SKU 排行、异常设备图表 |
 
-平台端则针对不同B端用户的使用场景，分为两大管理模块：一是平台管理端，作为核心管控中枢，全面负责设备管理、货道配置、商品上架、工单调度，以及运营数据、运维数据的汇总分析，为平台运营者提供全方位的管理支撑；二是合作商后台，专门为拥有大量点位资源但缺乏专业运营能力的合作方设计，提供数据接入、销售分成核算、点位管理等核心功能，无需投入过多运营成本，即可实现点位资源的高效变现，实现平台与合作方的互利共赢。
+## 项目结构
+
+```
+src/
+├── api/manage/          # ★ 业务接口（13 个模块）
+├── views/manage/        # ★ 业务页面（12 个模块，73+ .vue 文件）
+├── views/home/          # ★ 首页看板
+├── components/          # 通用组件
+├── layout/              # 布局
+├── router/              # 路由
+├── store/               # Pinia
+└── utils/               # 工具函数
+```
+
+## 快速开始
+
+```bash
+git clone https://github.com/LinShinan/IvmHub-Vue.git
+cd IvmHub-Vue
+npm install
+npm run dev                # http://localhost:80，API 代理 → 127.0.0.1:8080
+npm run build:prod         # 生产构建 → dist/
+```
